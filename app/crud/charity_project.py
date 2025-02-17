@@ -13,7 +13,7 @@ from app.services.investing import investing_donations_in_projects
 
 class CRUDCharityProject(CRUDBase[CharityProject,
                                   CharityProjectCreate,
-                                  CharityProjectUpdate,]):
+                                  CharityProjectUpdate ]):
     async def create_with_investing(
         self,
         charity_project: CharityProjectCreate,
@@ -34,7 +34,9 @@ class CRUDCharityProject(CRUDBase[CharityProject,
         # Получаем открытые донаты
         donations = await donation_crud.get_not_closed_objects(session)
         # Распределяем средства
-        invested_donations = investing_donations_in_projects(project, donations)
+        invested_donations = investing_donations_in_projects(
+            project, donations
+        )
         session.add_all(invested_donations)
         await session.commit()
         await session.refresh(project)
@@ -80,7 +82,7 @@ class CRUDCharityProject(CRUDBase[CharityProject,
         session: AsyncSession,
     ) -> CharityProject:
         return await self.create(charity_project, session)
-    
+
     async def update_with_close_check(
         self,
         charity_project: CharityProjectDB,
@@ -111,5 +113,6 @@ class CRUDCharityProject(CRUDBase[CharityProject,
         session: AsyncSession,
     ) -> CharityProject:
         return await self.remove(db_obj, session)
+
 
 charity_project_crud = CRUDCharityProject(CharityProject)

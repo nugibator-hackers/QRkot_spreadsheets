@@ -1,6 +1,6 @@
 from sqlalchemy import Column, ForeignKey, Integer, Text
 
-from app.constants import MAX_DESCRIPTION_PREVIEW_LENGTH
+from app.constants import MAX_DESCRIPTION_PREV_LEN
 from app.models.base import CharityBaseModel
 
 
@@ -9,5 +9,6 @@ class Donation(CharityBaseModel):
     comment = Column(Text)
 
     def __repr__(self):
-        return (f'User {self.user_id}({self.comment[:MAX_DESCRIPTION_PREVIEW_LENGTH]})'
+        return (f'User {self.user_id}'
+                f'({self.comment[:MAX_DESCRIPTION_PREV_LEN]})'
                 f'{super().__repr__()}')
