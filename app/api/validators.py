@@ -10,6 +10,7 @@ from app.constants import (NAME_DUPLICATE,
                            FULL_AMOUNT_LESS_INVESTED_AMOUNT)
 from app.crud.charity_project import charity_project_crud
 from app.models import CharityProject
+from app.services.google_api import spreadsheets_update_value
 
 
 class GetReportRequest(BaseModel):

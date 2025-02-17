@@ -22,9 +22,5 @@ async def get_report(
     session: AsyncSession = Depends(get_async_session),
     wrapper_services: Aiogoogle = Depends(get_service)
 ):
-    """Только для суперюзеров."""
-    spreadsheet_id, spreadsheets_url = await spreadsheets_create(
-        wrapper_services
-    )
     await set_user_permissions(spreadsheet_id, wrapper_services)
     return spreadsheets_url
