@@ -1,19 +1,15 @@
 from aiogoogle import Aiogoogle
 from pydantic import BaseModel, validator
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.constants import (NAME_DUPLICATE,
+                           PROJECT_NOT_FOUND,
+                           PROJECT_IS_CLOSED,
+                           PROJECT_HAS_DONATIONS,
+                           FULL_AMOUNT_LESS_INVESTED_AMOUNT)
 from app.crud.charity_project import charity_project_crud
 from app.models import CharityProject
-
-NAME_DUPLICATE = 'Проект с таким именем уже существует!'
-PROJECT_NOT_FOUND = 'Проект не найден!'
-PROJECT_IS_CLOSED = 'Проект закрыт и недоступен для редактирования!'
-PROJECT_HAS_DONATIONS = 'В проект были внесены средства, не подлежит удалению!'
-FULL_AMOUNT_LESS_INVESTED_AMOUNT = (
-    'Нельзя установить значение full_amount '
-    'меньше уже вложенной суммы.'
-)
 
 
 class GetReportRequest(BaseModel):
@@ -35,23 +31,17 @@ class GetReportRequest(BaseModel):
             raise ValueError('Wrapper services must be valid')
         return v
 
+
 async def get_report(
     request: GetReportRequest = Depends(),
 ):
-    """Только для суперюзеров."""
-    projects = await charity_project_crud.get_projects_by_completion_rate(
-        request.session
-    )
-    spreadsheet_id, spreadsheets_url = await spreadsheets_create(
-        request.wrapper_services
-    )
-    await set_user_permissions(spreadsheet_id, request.wrapper_services)
     try:
         await spreadsheets_update_value(
             spreadsheet_id, projects, request.wrapper_services
         )
     except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=str(error))
     return spreadsheets_url
 
 
