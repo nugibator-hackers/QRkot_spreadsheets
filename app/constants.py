@@ -4,7 +4,7 @@ SHORT_PASSWORD = (
 ).format(MIN_PASSWORD_LENGTH)
 EMAIL_IN_PASSWORD = 'Пароль не должен содержать e-mail.'
 USER_REGISTERED = 'Пользователь {} зарегистрирован.'
-MAX_CHARITY_PROJECT_NAME_LENGTH = 100
+MAX_LEN = 100
 MAX_DESCRIPTION_PREV_LEN = 10
 NAME_DUPLICATE = 'Проект с таким именем уже существует!'
 PROJECT_NOT_FOUND = 'Проект не найден!'
