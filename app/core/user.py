@@ -12,12 +12,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_async_session
+from app.constants import (MIN_PASSWORD_LENGTH,
+                         SHORT_PASSWORD,
+                         EMAIL_IN_PASSWORD,
+                         USER_REGISTERED)
 from app.models.user import User
 from app.schemas.user import UserCreate
 
-SHORT_PASSWORD = 'Пароль должен содержать не менее 3 символов.'
-EMAIL_IN_PASSWORD = 'Пароль не должен содержать e-mail.'
-USER_REGISTERED = 'Пользователь {} зарегистрирован.'
+
+JWT_LIFETIME_SECONDS = 3600
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
@@ -27,7 +30,7 @@ bearer_transport = BearerTransport(tokenUrl='auth/jwt/login')
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=settings.secret, lifetime_seconds=3600)
+    return JWTStrategy(secret=settings.secret, lifetime_seconds=JWT_LIFETIME_SECONDS)
 
 
 auth_backend = AuthenticationBackend(
@@ -37,13 +40,13 @@ auth_backend = AuthenticationBackend(
 )
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
+class UserManager(IntegerIDMixin, BaseUserManager[User , int]):
     async def validate_password(
         self,
         password: str,
         user: Union[UserCreate, User],
     ) -> None:
-        if len(password) < 3:
+        if len(password) < MIN_PASSWORD_LENGTH:
             raise InvalidPasswordException(
                 reason=SHORT_PASSWORD
             )
@@ -62,7 +65,7 @@ async def get_user_manager(user_db=Depends(get_user_db)):
     yield UserManager(user_db)
 
 
-fastapi_users = FastAPIUsers[User, int](
+fastapi_users = FastAPIUsers[User , int](
     get_user_manager,
     [auth_backend],
 )

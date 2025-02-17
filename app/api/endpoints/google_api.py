@@ -30,10 +30,4 @@ async def get_report(
         wrapper_services
     )
     await set_user_permissions(spreadsheet_id, wrapper_services)
-    try:
-        await spreadsheets_update_value(
-            spreadsheet_id, projects, wrapper_services
-        )
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error))
     return spreadsheets_url
