@@ -9,4 +9,5 @@ class Donation(CharityBaseModel):
     comment = Column(Text)
 
     def __repr__(self):
-        return f'User {self.user_id}({self.comment[:MAX_DESCRIPTION_PREVIEW_LENGTH]}) {super().__repr__()}'
+        return (f'User {self.user_id}({self.comment[:MAX_DESCRIPTION_PREVIEW_LENGTH]})'
+                f'{super().__repr__()}')

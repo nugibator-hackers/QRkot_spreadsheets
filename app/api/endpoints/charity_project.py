@@ -15,6 +15,7 @@ from app.schemas.charity_project import (
 
 router = APIRouter()
 
+
 @router.post(
     '/',
     response_model=CharityProjectDB,
@@ -30,6 +31,7 @@ async def create_new_charity_project(
         charity_project, session
     )
 
+
 @router.get(
     '/',
     response_model=list[CharityProjectDB]
@@ -38,6 +40,7 @@ async def get_all_charity_projects(
     session: AsyncSession = Depends(get_async_session),
 ):
     return await charity_project_crud.get_multi(session)
+
 
 @router.delete(
     '/{project_id}',
@@ -54,6 +57,7 @@ async def remove_charity_project(
     return await charity_project_crud.remove_charity_project(
         charity_project, session
     )
+
 
 @router.patch(
     '/{project_id}',

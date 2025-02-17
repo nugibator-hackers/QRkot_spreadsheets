@@ -13,9 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.db import get_async_session
 from app.constants import (MIN_PASSWORD_LENGTH,
-                         SHORT_PASSWORD,
-                         EMAIL_IN_PASSWORD,
-                         USER_REGISTERED)
+                           SHORT_PASSWORD,
+                           EMAIL_IN_PASSWORD,
+                           USER_REGISTERED)
 from app.models.user import User
 from app.schemas.user import UserCreate
 
@@ -30,7 +30,8 @@ bearer_transport = BearerTransport(tokenUrl='auth/jwt/login')
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=settings.secret, lifetime_seconds=JWT_LIFETIME_SECONDS)
+    return JWTStrategy(secret=settings.secret,
+                       lifetime_seconds=JWT_LIFETIME_SECONDS)
 
 
 auth_backend = AuthenticationBackend(
@@ -40,7 +41,7 @@ auth_backend = AuthenticationBackend(
 )
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[User , int]):
+class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     async def validate_password(
         self,
         password: str,
@@ -65,7 +66,7 @@ async def get_user_manager(user_db=Depends(get_user_db)):
     yield UserManager(user_db)
 
 
-fastapi_users = FastAPIUsers[User , int](
+fastapi_users = FastAPIUsers[User, int](
     get_user_manager,
     [auth_backend],
 )

@@ -4,12 +4,16 @@ from sqlalchemy import extract, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.base import CRUDBase
 from app.models import CharityProject
-from app.schemas.charity_project import CharityProjectCreate, CharityProjectUpdate, CharityProjectDB
+from app.schemas.charity_project import (CharityProjectCreate,
+                                         CharityProjectUpdate,
+                                         CharityProjectDB)
 from app.crud.donation import donation_crud  # Добавлен импорт
 from app.services.investing import investing_donations_in_projects
 
-class CRUDCharityProject(CRUDBase[CharityProject, CharityProjectCreate, CharityProjectUpdate,]):
 
+class CRUDCharityProject(CRUDBase[CharityProject,
+                                  CharityProjectCreate,
+                                  CharityProjectUpdate,]):
     async def create_with_investing(
         self,
         charity_project: CharityProjectCreate,
