@@ -33,17 +33,6 @@ class GetReportRequest(BaseModel):
         return v
 
 
-async def get_report(
-    request: GetReportRequest = Depends(),
-):
-    try:
-        await spreadsheets_update_value
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=str(error))
-    return spreadsheets_url
-
-
 async def check_name_duplicate(
     project_name: str,
     session: AsyncSession,
