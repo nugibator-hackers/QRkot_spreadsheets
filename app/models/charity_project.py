@@ -7,9 +7,9 @@ from app.models.base import CharityBaseModel
 
 class CharityProject(CharityBaseModel):
     name = Column(
-    String(MAX_CHARITY_PROJECT_NAME_LENGTH),
-    unique=True, nullable=False
-)
+                 String(MAX_CHARITY_PROJECT_NAME_LENGTH),
+                 unique=True, nullable=False
+    )
     description = Column(Text, nullable=False)
 
     def __repr__(self):

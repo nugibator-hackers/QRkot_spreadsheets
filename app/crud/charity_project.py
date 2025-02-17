@@ -13,7 +13,7 @@ from app.services.investing import investing_donations_in_projects
 
 class CRUDCharityProject(CRUDBase[CharityProject,
                                   CharityProjectCreate,
-                                  CharityProjectUpdate ]):
+                                  CharityProjectUpdate]):
     async def create_with_investing(
         self,
         charity_project: CharityProjectCreate,
