@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.constants import FALSE
 
+
 async def get_not_closed_objects(data_base, session):
     not_closed_objects = await session.execute(select(data_base).where(
         data_base.fully_invested == FALSE))
