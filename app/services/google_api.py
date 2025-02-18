@@ -1,115 +1,57 @@
-import copy
+import logging
 from datetime import datetime
 
 from aiogoogle import Aiogoogle
+from fastapi.encoders import jsonable_encoder
 
-from app.core.config import settings
-
-FORMAT = '%Y/%m/%d %H:%M:%S'
-SPREADSHEET_TITLE = 'Отчёт на {}'
-SHEETS_ROW = 100
-SHEETS_COLUMN = 10
-SPREADSHEET_BODY = dict(
-    properties=dict(
-        title='Отчет от ',
-        locale='ru_RU',
-    ),
-    sheets=[
-        dict(
-            properties=dict(
-                sheetType='GRID',
-                sheetId=0,
-                title='Лист1',
-                gridProperties=dict(
-                    rowCount=SHEETS_ROW,
-                    columnCount=SHEETS_COLUMN,
-                )
-            )
-        )
-    ]
-)
-TABLE_HEADER = [
-    ['Отчёт от'],
-    ['Топ проектов по скорости закрытия'],
-    ['Название проекта', 'Время сбора', 'Описание']
-]
-COLLECTION_TIME_IN_SHEETS = (
-    '=INT({collection_time}/86400) & " days, " & '
-    'TEXT({collection_time}/86400-INT({collection_time}/86400); "hh:mm:ss")'
-)
-INVALID_SIZE_ROW = (
-    f'Количество строк {{}} обновляемых данных '
-    f'больше размера пустой таблицы {SHEETS_ROW}'
-)
-INVALID_SIZE_COLUMN = (
-    f'Количество колонок {{}} обновляемых данных '
-    f'больше размера пустой таблицы {SHEETS_COLUMN}'
-)
+from app.services.constants import FORMAT, PERMISSIONS_BODY, SPREADSHEET_BODY
 
 
-async def spreadsheets_create(wrapper_services: Aiogoogle) -> tuple[str, str]:
-    now_date_time = datetime.now().strftime(FORMAT)
+async def spreadsheets_create(wrapper_services: Aiogoogle) -> str:
     service = await wrapper_services.discover('sheets', 'v4')
-    spreadsheet_body = copy.deepcopy(SPREADSHEET_BODY)
-    spreadsheet_body['properties']['title'] = SPREADSHEET_TITLE.format(
-        now_date_time
-    )
+    now_date_time = datetime.now().strftime(FORMAT)
+    SPREADSHEET_BODY['properties']['title'] += f'{now_date_time}'
     response = await wrapper_services.as_service_account(
-        service.spreadsheets.create(json=spreadsheet_body)
+        service.spreadsheets.create(json=SPREADSHEET_BODY)
     )
-    return response['spreadsheetId'], response['spreadsheetUrl']
+    spreadsheet_id = response['spreadsheetId']
+    logging.basicConfig(level=logging.INFO)
+    logging.info(f'Table create: '
+                 f'https://docs.google.com/spreadsheets/d/{spreadsheet_id}')
+    return spreadsheet_id
 
 
 async def set_user_permissions(
         spreadsheet_id: str,
         wrapper_services: Aiogoogle
 ) -> None:
-    permissions_body = {
-        'type': 'user',
-        'role': 'writer',
-        'emailAddress': settings.email
-    }
     service = await wrapper_services.discover('drive', 'v3')
     await wrapper_services.as_service_account(
         service.permissions.create(
             fileId=spreadsheet_id,
-            json=permissions_body,
-            fields='id'
-        )
-    )
+            json=PERMISSIONS_BODY,
+            fields="id"
+        ))
 
 
 async def spreadsheets_update_value(
         spreadsheet_id: str,
-        projects: list,
+        charity_projects: list,
         wrapper_services: Aiogoogle
 ) -> None:
     now_date_time = datetime.now().strftime(FORMAT)
     service = await wrapper_services.discover('sheets', 'v4')
-    table_header = copy.deepcopy(TABLE_HEADER)
-    table_header[0].append(now_date_time)
     table_values = [
-        *table_header,
-        *[
-            list(map(str, (
-                project['name'],
-                COLLECTION_TIME_IN_SHEETS.format(
-                    collection_time=project['collection_time']
-                ),
-                project['description']
-            )))
-            for project in projects
-        ]
+        ['Отчёт от', now_date_time],
+        ['Топ проектов по скорости закрытия'],
+        ['Название проекта', 'Время сбора', 'Описание']
     ]
-    if len(table_values) > SHEETS_ROW:
-        raise ValueError(
-            INVALID_SIZE_ROW.format(len(table_values))
-        )
-    max_column = max(map(len, table_values))
-    if max_column > SHEETS_COLUMN:
-        raise ValueError(
-            INVALID_SIZE_COLUMN.format(max_column)
-        )
+    for project in charity_projects:
+        project = jsonable_encoder(project)
+        new_row = [project['name'], project['close_date'],
+                   project['description']]
+        table_values.append(new_row)
+
     update_body = {
         'majorDimension': 'ROWS',
         'values': table_values
@@ -117,7 +59,7 @@ async def spreadsheets_update_value(
     await wrapper_services.as_service_account(
         service.spreadsheets.values.update(
             spreadsheetId=spreadsheet_id,
-            range=f'R1C1:R{len(table_values)}C{max_column}',
+            range='A1:C1000',
             valueInputOption='USER_ENTERED',
             json=update_body
         )

@@ -1,103 +1,78 @@
-from aiogoogle import Aiogoogle
-from pydantic import BaseModel, validator
-from fastapi import HTTPException, status
+from http import HTTPStatus
+
+from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.constants import (NAME_DUPLICATE,
-                           PROJECT_NOT_FOUND,
-                           PROJECT_IS_CLOSED,
-                           PROJECT_HAS_DONATIONS,
-                           FULL_AMOUNT_LESS_INVESTED_AMOUNT)
 from app.crud.charity_project import charity_project_crud
 from app.models import CharityProject
 
 
-class GetReportRequest(BaseModel):
-    session: AsyncSession
-    wrapper_services: Aiogoogle
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    @validator('session')
-    def session_must_be_valid(cls, v):
-        if not v:
-            raise ValueError('Session must be valid')
-        return v
-
-    @validator('wrapper_services')
-    def wrapper_services_must_be_valid(cls, v):
-        if not v:
-            raise ValueError('Wrapper services must be valid')
-        return v
-
-
-async def check_name_duplicate(
-    project_name: str,
-    session: AsyncSession,
-) -> None:
-    if await charity_project_crud.get_project_id_by_name(
-        project_name, session
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=NAME_DUPLICATE,
-        )
-
-
 async def check_charity_project_exists(
-    project_id: int,
-    session: AsyncSession,
+        charity_project_id: int,
+        session: AsyncSession,
 ) -> CharityProject:
-    charity_project = await charity_project_crud.get(
-        obj_id=project_id, session=session
-    )
+    charity_project = await charity_project_crud.get(charity_project_id,
+                                                     session)
     if charity_project is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=PROJECT_NOT_FOUND
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Проект не найден!'
         )
     return charity_project
 
 
-async def check_charity_project_not_closed(
-    project_id: int,
-    session: AsyncSession,
+async def check_name_duplicate(
+        charity_project_name: str,
+        session: AsyncSession,
 ) -> None:
-    charity_project = await charity_project_crud.get(
-        obj_id=project_id, session=session
-    )
+    charity_project_id = await charity_project_crud.get_project_id_by_name(
+        charity_project_name, session)
+    if charity_project_id is not None:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail='Проект с таким именем уже существует!',
+        )
+
+
+async def check_full_amount_not_less_then_invested(
+        db_obj,
+        obj_in
+):
+    obj_data = jsonable_encoder(db_obj)
+    if obj_in['full_amount'] < obj_data['invested_amount']:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Требуемая сумма не может быть меньше внесённой!',
+        )
+
+
+async def check_charity_project_is_closed(
+        charity_project: CharityProject
+):
     if charity_project.fully_invested:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=PROJECT_IS_CLOSED
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail='Удаление закрытых проектов запрещено!'
         )
 
 
-async def check_donations_exists(
-    project_id: int,
-    session: AsyncSession
-) -> None:
-    charity_project = await charity_project_crud.get(
-        obj_id=project_id, session=session
-    )
-    if charity_project.invested_amount > 0:
+async def check_charity_project_is_invested(
+        charity_project: CharityProject
+):
+    if charity_project.invested_amount:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=PROJECT_HAS_DONATIONS
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=('Запрещено удаление проектов, '
+                    'в которые уже внесены средства!')
         )
 
 
-async def check_new_full_amount_more_invested_amount(
-    project_id: int,
-    new_full_amount: int,
-    session: AsyncSession,
-) -> None:
-    charity_project = await charity_project_crud.get(
-        obj_id=project_id, session=session
-    )
-    if new_full_amount < charity_project.invested_amount:
+async def check_charity_project_fields(
+        obj_in
+):
+    if not obj_in:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=FULL_AMOUNT_LESS_INVESTED_AMOUNT
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Попытка присвоить значение нередактируемым полям!'
         )
