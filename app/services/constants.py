@@ -15,3 +15,7 @@ SPREADSHEET_BODY = {
 PERMISSIONS_BODY = {'type': 'user',
                     'role': 'writer',
                     'emailAddress': settings.email}
+
+MIN_PASSWORD_LENGTH = 3
+LIFETIME = 3600
+FALSE = 0

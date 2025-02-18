@@ -4,8 +4,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-FALSE = 0
-
+from app.services.constants import FALSE
 
 async def get_not_closed_objects(data_base, session):
     not_closed_objects = await session.execute(select(data_base).where(

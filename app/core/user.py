@@ -11,10 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.db import get_async_session
+from app.services.constants import MIN_PASSWORD_LENGTH, LIFETIME
 from app.models.user import User
 from app.schemas.user import UserCreate
-
-PASSWORD_MIN_LENGTH = 3
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
@@ -25,7 +24,7 @@ bearer_transport = BearerTransport(tokenUrl='auth/jwt/login')
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=settings.secret, lifetime_seconds=3600)
+    return JWTStrategy(secret=settings.secret, lifetime_seconds=LIFETIME)
 
 
 auth_backend = AuthenticationBackend(
@@ -42,7 +41,7 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         password: str,
         user: Union[UserCreate, User],
     ) -> None:
-        if len(password) < PASSWORD_MIN_LENGTH:
+        if len(password) < MIN_PASSWORD_LENGTH:
             raise InvalidPasswordException(
                 reason='Password should be at least 3 characters'
             )
