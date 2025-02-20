@@ -5,9 +5,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.base import CRUDBase
 from app.models import CharityProject
+from app.schemas.charityproject import CharityProjectCreate
 
 
 class CRUDCharityProject(CRUDBase):
+    async def create_with_investment(
+        self,
+        obj_in: CharityProjectCreate,
+        session: AsyncSession
+    ) -> CharityProject:
+        from app.services.investment import investing_to_new_project
+        new_project = await self.create(obj_in, session)
+        await investing_to_new_project(new_project, session)
+        await session.commit()
+        await session.refresh(new_project)
+        return new_project
+
     async def get_project_by_name(
             self,
             project_name: str,

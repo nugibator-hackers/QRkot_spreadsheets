@@ -17,7 +17,6 @@ from app.schemas.charityproject import (
     CharityProjectDB,
     CharityProjectUpdate,
 )
-from app.services.investment import investing_to_new_project
 
 router = APIRouter()
 
@@ -28,14 +27,11 @@ router = APIRouter()
              dependencies=[Depends(current_superuser)]
              )
 async def create_charity_project(
-        project: CharityProjectCreate,
-        session: AsyncSession = Depends(get_async_session)):
+    project: CharityProjectCreate,
+    session: AsyncSession = Depends(get_async_session)
+):
     await check_name_duplicate(project.name, session)
-    new_room = await charityproject_crud.create(project, session)
-    await investing_to_new_project(new_room, session)
-    await session.commit()
-    await session.refresh(new_room)
-    return new_room
+    return await charityproject_crud.create_with_investment(project, session)
 
 
 @router.get('/',
