@@ -1,42 +1,37 @@
-from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, PositiveInt, validator
+from datetime import datetime
+
+from app.core.constant import EXAMPLE_FULL_AMOUNT
+from pydantic import Field, NonNegativeInt, StrictBool, BaseModel, validator
 
 
-class DonationBase(BaseModel):
+class DonationCreate(BaseModel):
+    full_amount: NonNegativeInt = Field(..., example=EXAMPLE_FULL_AMOUNT)
     comment: Optional[str]
-    full_amount: PositiveInt
-
-
-class DonationCreate(DonationBase):
 
     @validator('full_amount')
-    def full_amount_cannot_be_null(cls, value):
-        if value is None:
-            raise ValueError('Пожертвование не может быть пустым!')
-        return value
-
-    @validator('comment')
-    def comment_cannot_be_null(cls, value):
-        if value is None:
-            raise ValueError('Комментарий не может быть пустым!')
+    def check_full_amount(cls, value):
+        if value is not None and (not isinstance(value, int) or value <= 0):
+            raise ValueError(
+                'сумма пожертвования должна быть целочисленной и больше 0')
         return value
 
 
-class DonationMe(DonationBase):
+class DonationDB(DonationCreate):
     id: int
+    full_amount: int
     create_date: datetime
 
     class Config:
         orm_mode = True
 
 
-class DonationDB(DonationMe):
+class DonationDBSuperuser(DonationDB):
     user_id: int
-    invested_amount: int
-    fully_invested: bool
-    close_date: datetime
+    invested_amount: NonNegativeInt
+    fully_invested: StrictBool
+    close_date: Optional[datetime]
 
     class Config:
         orm_mode = True

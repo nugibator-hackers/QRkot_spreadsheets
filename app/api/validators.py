@@ -1,78 +1,83 @@
 from http import HTTPStatus
-
 from fastapi import HTTPException
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.crud.charity_project import charity_project_crud
+from app.crud.charityproject import charityproject_crud
 from app.models import CharityProject
 
 
-async def check_charity_project_exists(
-        charity_project_id: int,
-        session: AsyncSession,
-) -> CharityProject:
-    charity_project = await charity_project_crud.get(charity_project_id,
-                                                     session)
-    if charity_project is None:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail='Проект не найден!'
-        )
-    return charity_project
-
-
 async def check_name_duplicate(
-        charity_project_name: str,
+        project_name: str,
         session: AsyncSession,
 ) -> None:
-    charity_project_id = await charity_project_crud.get_project_id_by_name(
-        charity_project_name, session)
-    if charity_project_id is not None:
+    project_id = await charityproject_crud.get_project_by_name(project_name,
+                                                               session)
+    if project_id is not None:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail='Проект с таким именем уже существует!',
         )
 
 
-async def check_full_amount_not_less_then_invested(
-        db_obj,
-        obj_in
-):
-    obj_data = jsonable_encoder(db_obj)
-    if obj_in['full_amount'] < obj_data['invested_amount']:
+async def check_charityproject_exists(
+        charityproject_id: int, session: AsyncSession, ) -> CharityProject:
+    charityproject = await charityproject_crud.get(charityproject_id, session)
+    if charityproject is None:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail='Проект не найден!'
+        )
+    return charityproject
+
+
+async def check_full_amount(
+        full_amount: int,
+        charityproject_id: int,
+        session: AsyncSession,
+) -> None:
+    charityproject = await charityproject_crud.get(charityproject_id, session)
+    if full_amount < charityproject.invested_amount:
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-            detail='Требуемая сумма не может быть меньше внесённой!',
+            detail='Требуемая сумма не может быть меньше уже внесённой!'
         )
 
 
-async def check_charity_project_is_closed(
-        charity_project: CharityProject
-):
-    if charity_project.fully_invested:
+def check_close_project(project):
+    if project.fully_invested is True:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail='Удаление закрытых проектов запрещено!'
+            detail='Нельзя редактировать или удалять закрытый проект!'
         )
 
 
-async def check_charity_project_is_invested(
-        charity_project: CharityProject
-):
-    if charity_project.invested_amount:
+def check_project_invested_amount(project):
+    if project.invested_amount > 0:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail=('Запрещено удаление проектов, '
-                    'в которые уже внесены средства!')
+            detail='Нельзя удалять проект в который внесены средства!'
         )
 
 
-async def check_charity_project_fields(
-        obj_in
-):
-    if not obj_in:
+def check_project_before_edit(project):
+    if project.invested_amount is not None:
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-            detail='Попытка присвоить значение нередактируемым полям!'
+            detail='Нельзя изменять сумму инвестиций!'
+        )
+    if project.create_date is not None:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Нельзя изменять дату создания!'
+        )
+
+    if project.close_date is not None:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Нельзя изменять дату закрытия!'
+        )
+
+    if project.fully_invested is not None:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail='Нельзя изменять сумму инвестирования!'
         )
